@@ -9,6 +9,7 @@
     { "src": "/api/data/messages",   "dest": "/api/data/messages.js" },
     { "src": "/api/data/transcripts","dest": "/api/data/transcripts.js" },
     { "src": "/api/data/search",     "dest": "/api/data/search.js" },
+    { "src": "/api/data/translate",  "dest": "/api/data/translate.js" },
     { "src": "/dashboard/login[/]?", "dest": "/dashboard/login.html" },
     { "src": "/dashboard[/]?$",      "dest": "/dashboard/index.html" },
     { "src": "/dashboard/(.*)",      "dest": "/dashboard/$1" },

@@ -25,6 +25,39 @@
       --nav-h-mobile: 56px;
     }
     html, body { height: 100%; overflow: hidden; }
+    /* Pull-to-refresh hint */
+    .refresh-btn { background: none; border: 1px solid var(--border); color: var(--text2); border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .2s; }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+    /* Message card */
+    .msg-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s; }
+    .msg-card:hover { border-color: rgba(243,156,58,.3); }
+    .msg-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+    .msg-sender { font-weight: 600; font-size: 13px; }
+    .msg-group-tag { font-size: 11px; color: var(--text2); background: var(--bg2); padding: 2px 8px; border-radius: 20px; }
+    .msg-time { font-size: 11px; color: var(--text2); margin-left: auto; }
+    .msg-body { font-size: 13px; color: var(--text2); line-height: 1.5; word-break: break-word; }
+    .msg-body.clamped { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .msg-voice-tag { font-size: 11px; color: var(--accent); margin-top: 4px; }
+    .msg-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .msg-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s; }
+    .msg-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .msg-translated { margin-top: 8px; padding: 8px 12px; background: var(--accent-bg); border-radius: 8px; font-size: 13px; color: var(--accent-h); line-height: 1.6; }
+    .msg-bullets { margin-top: 6px; }
+    .msg-bullet { display: flex; gap: 8px; padding: 3px 0; font-size: 13px; color: var(--text); line-height: 1.5; }
+    .msg-bullet::before { content: '•'; color: var(--accent); flex-shrink: 0; font-size: 16px; line-height: 1.3; }
+    /* Full message modal */
+    #msg-modal { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); padding: 20px; align-items: center; justify-content: center; }
+    #msg-modal.open { display: flex; }
+    .modal-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 620px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
+    .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .modal-title { font-weight: 700; font-size: 15px; }
+    .modal-close { background: none; border: none; color: var(--text2); font-size: 20px; cursor: pointer; padding: 4px; line-height: 1; }
+    .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .modal-text { font-size: 14px; line-height: 1.7; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+    .modal-actions { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+    .lang-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .lang-pill { font-size: 11px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); color: var(--text2); cursor: pointer; transition: all .15s; }
+    .lang-pill:hover, .lang-pill.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
     body {
       font-family: 'Inter', system-ui, sans-serif;
       background: var(--bg);
@@ -577,8 +610,9 @@
           </div>
         </div>
 
-        <div class="section-hdr">
+        <div class="section-hdr" style="display:flex;align-items:center;justify-content:space-between;">
           <span class="section-title">Recent messages</span>
+          <button class="refresh-btn" onclick="refreshAll()">↻ Refresh</button>
         </div>
         <div id="home-activity-list">
           <div class="empty-state">
@@ -682,6 +716,35 @@
   </main>
 
 </div><!-- /app -->
+
+<!-- Full message modal -->
+<div id="msg-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-sender">—</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;" id="modal-meta">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-text" id="modal-text"></div>
+      <div id="modal-translated" style="display:none;margin-top:12px;padding:12px;background:var(--accent-bg);border-radius:10px;font-size:13px;color:var(--accent-h);line-height:1.7;white-space:pre-wrap;"></div>
+    </div>
+    <div class="modal-actions">
+      <div class="lang-pills">
+        <span style="font-size:11px;color:var(--text2);padding:5px 4px 5px 0;">Translate:</span>
+        <button class="lang-pill" onclick="translateModal('en')">EN</button>
+        <button class="lang-pill" onclick="translateModal('es')">ES</button>
+        <button class="lang-pill" onclick="translateModal('fr')">FR</button>
+        <button class="lang-pill" onclick="translateModal('pt')">PT</button>
+        <button class="lang-pill" onclick="translateModal('de')">DE</button>
+        <button class="lang-pill" onclick="translateModal('it')">IT</button>
+        <button class="lang-pill" onclick="translateModal('ar')">AR</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Mobile bottom nav -->
 <nav class="fixed bottom-0 left-0 right-0 z-50 bg-[#0f0f16] border-t border-white/[.07] pb-[env(safe-area-inset-bottom)] md:hidden">
@@ -788,6 +851,97 @@
     }
   }
 
+  // ── Quick inline translate (card level) ──
+  async function quickTranslate(i) {
+    const m = window._msgs?.[i];
+    if (!m) return;
+    const text = m.transcription || m.body || m.text_content || '';
+    if (!text) return;
+    const el = document.getElementById(`quick-tr-${i}`);
+    if (!el) return;
+    if (el.style.display !== 'none' && el.dataset.loaded) {
+      el.style.display = 'none'; el.dataset.loaded = ''; return;
+    }
+    el.style.display = 'block';
+    el.textContent = 'Translating…';
+    try {
+      const r = await fetch('/api/data/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, lang: 'en' }),
+      });
+      const d = await r.json();
+      el.textContent = d.translated || d.error || 'Error';
+      el.dataset.loaded = '1';
+    } catch (e) {
+      el.textContent = 'Error: ' + e.message;
+    }
+  }
+
+  // ── Refresh all ──
+  function refreshAll() {
+    loadAllData();
+  }
+
+  // ── Modal ──
+  let _modalText = '';
+  function openModal(m, groupMap) {
+    const group = groupMap[m.group_id] || m.chat_name || '';
+    const text = m.body || m.text_content || '';
+    const transcription = m.transcription || '';
+    _modalText = transcription || text;
+
+    document.getElementById('modal-sender').textContent = m.sender_name || m.sender_phone || 'Unknown';
+    document.getElementById('modal-meta').textContent =
+      [group, m.message_type, new Date(m.timestamp || m.created_at).toLocaleString()].filter(Boolean).join(' · ');
+
+    const modalTextEl = document.getElementById('modal-text');
+    if (m.message_type === 'voice' && transcription) {
+      // Bullet points for transcription
+      const sentences = transcription.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 3);
+      if (sentences.length > 1) {
+        modalTextEl.innerHTML = sentences.map(s =>
+          `<div class="msg-bullet">${s.trim()}</div>`
+        ).join('');
+      } else {
+        modalTextEl.textContent = transcription;
+      }
+    } else {
+      modalTextEl.textContent = _modalText;
+    }
+
+    document.getElementById('modal-translated').style.display = 'none';
+    document.getElementById('modal-translated').textContent = '';
+    document.querySelectorAll('.lang-pill').forEach(p => p.classList.remove('active'));
+    document.getElementById('msg-modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('msg-modal').classList.remove('open');
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  async function translateModal(lang) {
+    if (!_modalText) return;
+    const el = document.getElementById('modal-translated');
+    document.querySelectorAll('.lang-pill').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.lang-pill[onclick="translateModal('${lang}')"]`)?.classList.add('active');
+    el.textContent = 'Translating…';
+    el.style.display = 'block';
+    try {
+      const r = await fetch('/api/data/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: _modalText, lang }),
+      });
+      const d = await r.json();
+      el.textContent = d.translated || d.error || 'No translation';
+    } catch (e) {
+      el.textContent = 'Translation error: ' + e.message;
+    }
+  }
+
   // ── Logout ──
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -890,22 +1044,44 @@
       const groupMap = {};
       _groups.forEach(g => { groupMap[g.id] = g.name || g.wa_group_id || g.id; });
 
-      targetEl.innerHTML = msgs.map(m => {
-        const group = groupMap[m.group_id] || '';
-        return `
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;">
-          <div style="font-size:20px;margin-top:1px;">${msgIcon(m.message_type)}</div>
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <span style="font-weight:600;font-size:13px;">${m.sender_name || m.sender_phone || 'Unknown'}</span>
-              ${group ? `<span style="font-size:11px;color:var(--text2);background:var(--bg2);padding:2px 8px;border-radius:20px;">${group}</span>` : ''}
-              <span style="font-size:11px;color:var(--text2);margin-left:auto;">${timeAgo(m.created_at)}</span>
-            </div>
-            <div style="font-size:13px;color:var(--text2);margin-top:4px;line-height:1.5;word-break:break-word;">
-              ${(m.text_content || m.body) ? (m.text_content || m.body).substring(0, 300) + ((m.text_content || m.body).length > 300 ? '…' : '') : `<em>[${m.message_type || 'media'}]</em>`}
-            </div>
-            ${m.message_type === 'voice' && m.duration_seconds ? `<div style="font-size:11px;color:var(--accent);margin-top:4px;">🎙 ${m.duration_seconds}s voice note</div>` : ''}
+      window._groupMap = {...groupMap};
+      window._msgs = msgs;
+
+      targetEl.innerHTML = msgs.map((m, i) => {
+        const group = (window._groupMap[m.group_id] || m.chat_name || '');
+        const rawText = m.body || m.text_content || '';
+        const isVoice = m.message_type === 'voice' || m.message_type === 'audio';
+        const displayText = isVoice && m.transcription ? m.transcription : rawText;
+        const hasMore = displayText.length > 200;
+        let bodyHtml = '';
+        if (!displayText && !isVoice) {
+          bodyHtml = `<em style="color:var(--text2)">[${m.message_type || 'media'}]</em>`;
+        } else if (isVoice && m.transcription) {
+          const sentences = m.transcription.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 3);
+          if (sentences.length > 1) {
+            bodyHtml = sentences.slice(0, 3).map(s => `<div class="msg-bullet">${s.trim()}</div>`).join('') +
+              (sentences.length > 3 ? `<div style="font-size:11px;color:var(--accent);margin-top:4px;">+${sentences.length-3} more…</div>` : '');
+          } else {
+            bodyHtml = `<div class="msg-body clamped">${m.transcription}</div>`;
+          }
+        } else {
+          bodyHtml = `<div class="msg-body clamped">${displayText.replace(/</g,'&lt;')}</div>`;
+        }
+        return `<div class="msg-card" onclick="openModal(window._msgs[${i}],window._groupMap)">
+          <div class="msg-meta">
+            <span style="font-size:16px;">${msgIcon(m.message_type)}</span>
+            <span class="msg-sender">${m.sender_name || m.sender_phone || 'Unknown'}</span>
+            ${m.from_me ? `<span style="font-size:10px;background:rgba(243,156,58,.15);color:var(--accent);padding:2px 7px;border-radius:10px;">You</span>` : ''}
+            ${group ? `<span class="msg-group-tag">${group}</span>` : ''}
+            <span class="msg-time">${timeAgo(m.timestamp || m.created_at)}</span>
           </div>
+          ${bodyHtml}
+          ${isVoice && m.duration_seconds ? `<div class="msg-voice-tag">🎙 ${m.duration_seconds}s${m.language ? ' · '+m.language : ''}</div>` : ''}
+          <div class="msg-actions">
+            ${hasMore ? `<button class="msg-btn" onclick="event.stopPropagation();openModal(window._msgs[${i}],window._groupMap)">Read more →</button>` : ''}
+            ${displayText ? `<button class="msg-btn" onclick="event.stopPropagation();quickTranslate(${i})">🌐 Translate</button>` : ''}
+          </div>
+          <div id="quick-tr-${i}" style="display:none;" class="msg-translated"></div>
         </div>`;
       }).join('');
     } catch (e) {
