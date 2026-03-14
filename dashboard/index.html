@@ -589,9 +589,9 @@
 
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-label">Groups connected</div>
+            <div class="stat-label">Groups / Chats</div>
             <div class="stat-val" id="stat-groups">—</div>
-            <div class="stat-sub">Active QR sessions</div>
+            <div class="stat-sub">Unique chats captured</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Messages captured</div>
@@ -601,12 +601,12 @@
           <div class="stat-card">
             <div class="stat-label">Voice notes</div>
             <div class="stat-val" id="stat-voice">—</div>
-            <div class="stat-sub">Captured &amp; transcribed</div>
+            <div class="stat-sub">Captured</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Transcriptions</div>
             <div class="stat-val" id="stat-transcripts">—</div>
-            <div class="stat-sub">Text extractions</div>
+            <div class="stat-sub" id="stat-minutes-sub">Minutes used: —</div>
           </div>
         </div>
 
@@ -972,9 +972,10 @@
       document.getElementById('stat-messages').textContent = s.totalMessages ?? '0';
       document.getElementById('stat-voice').textContent = s.totalVoice ?? '0';
       document.getElementById('stat-transcripts').textContent = s.totalTranscripts ?? '0';
-      if (s.todayMessages != null) {
+      if (s.todayMessages != null)
         document.getElementById('stat-today-sub').textContent = `${s.todayMessages} today`;
-      }
+      if (s.totalMinutes != null)
+        document.getElementById('stat-minutes-sub').textContent = `${s.totalMinutes} min used`;
     } catch (e) { console.error('stats', e); }
   }
 

@@ -7,42 +7,31 @@ module.exports = async function handler(req, res) {
     today.setHours(0, 0, 0, 0);
     const todayISO = today.toISOString();
 
-    const [messages, voiceNotes, groups, transcripts, todayMsgs] = await Promise.all([
-      supabase('rewa_messages?select=count', { headers: { 'Prefer': 'count=exact', 'Range': '0-0' } })
-        .catch(() => null),
-      supabase(`rewa_messages?message_type=eq.voice&select=count`, { headers: { 'Prefer': 'count=exact', 'Range': '0-0' } })
-        .catch(() => null),
-      supabase('rewa_groups?select=count', { headers: { 'Prefer': 'count=exact', 'Range': '0-0' } })
-        .catch(() => null),
-      supabase('rewa_transcriptions?select=count', { headers: { 'Prefer': 'count=exact', 'Range': '0-0' } })
-        .catch(() => null),
-      supabase(`rewa_messages?timestamp=gte.${todayISO}&select=count`, { headers: { 'Prefer': 'count=exact', 'Range': '0-0' } })
-        .catch(() => null),
+    // All counts from rewa_messages (source of truth for QR backend)
+    const [allMsgs, voiceMsgs, todayMsgs, transcribedMsgs, durationData] = await Promise.all([
+      supabase('rewa_messages?select=id'),
+      supabase('rewa_messages?message_type=eq.voice&select=id'),
+      supabase(`rewa_messages?timestamp=gte.${todayISO}&select=id`),
+      supabase('rewa_messages?transcription=not.is.null&select=id,duration_seconds'),
+      supabase('rewa_messages?transcription=not.is.null&select=duration_seconds'),
     ]);
 
-    // Supabase count comes in Content-Range header — parse from result length fallback
-    // Use array length as count since we're getting rows
-    const countRows = async (table, filter = '') => {
-      try {
-        const rows = await supabase(`${table}?${filter}select=id`);
-        return Array.isArray(rows) ? rows.length : 0;
-      } catch { return 0; }
-    };
+    // Distinct groups from chat_id column
+    const groupsRaw = await supabase('rewa_messages?select=chat_id').catch(() => []);
+    const uniqueGroups = new Set((Array.isArray(groupsRaw) ? groupsRaw : []).map(r => r.chat_id).filter(Boolean));
 
-    const [totalMessages, totalVoice, totalGroups, totalTranscripts, todayMessages] = await Promise.all([
-      countRows('rewa_messages'),
-      countRows('rewa_messages', 'message_type=eq.voice&'),
-      countRows('rewa_groups'),
-      countRows('rewa_transcriptions'),
-      countRows('rewa_messages', `timestamp=gte.${todayISO}&`),
-    ]);
+    // Total minutes transcribed
+    const totalSeconds = (Array.isArray(durationData) ? durationData : [])
+      .reduce((sum, r) => sum + (r.duration_seconds || 0), 0);
+    const totalMinutes = Math.round(totalSeconds / 60 * 10) / 10;
 
     res.json({
-      totalMessages,
-      totalVoice,
-      totalGroups,
-      totalTranscripts,
-      todayMessages,
+      totalMessages:   Array.isArray(allMsgs) ? allMsgs.length : 0,
+      totalVoice:      Array.isArray(voiceMsgs) ? voiceMsgs.length : 0,
+      totalGroups:     uniqueGroups.size,
+      totalTranscripts:Array.isArray(transcribedMsgs) ? transcribedMsgs.length : 0,
+      todayMessages:   Array.isArray(todayMsgs) ? todayMsgs.length : 0,
+      totalMinutes,
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
