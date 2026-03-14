@@ -8,16 +8,17 @@ module.exports = async function handler(req, res) {
     const todayISO = today.toISOString();
 
     // All counts from rewa_messages (source of truth for QR backend)
+    const BASE = 'chat_id=neq.status@broadcast';
     const [allMsgs, voiceMsgs, todayMsgs, transcribedMsgs, durationData] = await Promise.all([
-      supabase('rewa_messages?select=id'),
-      supabase('rewa_messages?message_type=eq.voice&select=id'),
-      supabase(`rewa_messages?timestamp=gte.${todayISO}&select=id`),
-      supabase('rewa_messages?transcription=not.is.null&select=id,duration_seconds'),
-      supabase('rewa_messages?transcription=not.is.null&select=duration_seconds'),
+      supabase(`rewa_messages?${BASE}&select=id`),
+      supabase(`rewa_messages?${BASE}&message_type=eq.voice&select=id`),
+      supabase(`rewa_messages?${BASE}&timestamp=gte.${todayISO}&select=id`),
+      supabase(`rewa_messages?${BASE}&transcription=not.is.null&select=id,duration_seconds`),
+      supabase(`rewa_messages?${BASE}&transcription=not.is.null&select=duration_seconds`),
     ]);
 
-    // Distinct groups from chat_id column
-    const groupsRaw = await supabase('rewa_messages?select=chat_id').catch(() => []);
+    // Distinct groups from chat_id column (excluding broadcast)
+    const groupsRaw = await supabase(`rewa_messages?${BASE}&select=chat_id`).catch(() => []);
     const uniqueGroups = new Set((Array.isArray(groupsRaw) ? groupsRaw : []).map(r => r.chat_id).filter(Boolean));
 
     // Total minutes transcribed
