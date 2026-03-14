@@ -557,53 +557,64 @@
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-label">Groups connected</div>
-            <div class="stat-val">0</div>
-            <div class="stat-sub">Add your first group to start</div>
+            <div class="stat-val" id="stat-groups">—</div>
+            <div class="stat-sub">Active QR sessions</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Voice notes captured</div>
-            <div class="stat-val">0</div>
-            <div class="stat-sub">This month</div>
+            <div class="stat-label">Messages captured</div>
+            <div class="stat-val" id="stat-messages">—</div>
+            <div class="stat-sub" id="stat-today-sub">Total</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">AI searches</div>
-            <div class="stat-val">0</div>
-            <div class="stat-sub">This month</div>
+            <div class="stat-label">Voice notes</div>
+            <div class="stat-val" id="stat-voice">—</div>
+            <div class="stat-sub">Captured &amp; transcribed</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Summaries sent</div>
-            <div class="stat-val">0</div>
-            <div class="stat-sub">This week</div>
+            <div class="stat-label">Transcriptions</div>
+            <div class="stat-val" id="stat-transcripts">—</div>
+            <div class="stat-sub">Text extractions</div>
           </div>
         </div>
 
         <div class="section-hdr">
-          <span class="section-title">Recent activity</span>
+          <span class="section-title">Recent messages</span>
         </div>
-        <div class="empty-state">
-          <div class="empty-icon">🔊</div>
-          <div class="empty-title">No activity yet</div>
-          <div class="empty-sub">Add Retena's number to a WhatsApp group to start capturing voice notes and messages.</div>
-          <button class="btn-empty" onclick="navigate('groups', document.querySelector('[data-section=groups]'))">Connect your first group →</button>
+        <div id="home-activity-list">
+          <div class="empty-state">
+            <div class="empty-icon">🔊</div>
+            <div class="empty-title">Loading…</div>
+          </div>
         </div>
       </div>
 
       <!-- GROUPS -->
       <div class="panel-section" id="section-groups">
-        <div class="empty-state">
-          <div class="empty-icon">👥</div>
-          <div class="empty-title">No groups connected</div>
-          <div class="empty-sub">Add Retena's WhatsApp number to any group, or scan a QR code to connect it.</div>
-          <button class="btn-empty">Connect a group →</button>
+        <div id="groups-list">
+          <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <div class="empty-title">Loading groups…</div>
+          </div>
         </div>
       </div>
 
       <!-- AI SEARCH -->
       <div class="panel-section" id="section-search">
-        <div class="empty-state">
-          <div class="empty-icon">🔍</div>
-          <div class="empty-title">AI Search</div>
-          <div class="empty-sub">Search across your entire group history with natural language. Connect a group first to get started.</div>
+        <div style="padding:24px 0 16px;">
+          <div style="display:flex;gap:10px;max-width:640px;">
+            <input id="search-input" type="text" placeholder="Search messages and transcripts…"
+              style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:11px 16px;font-size:14px;outline:none;"
+              onkeydown="if(event.key==='Enter')runSearch()"
+            >
+            <button onclick="runSearch()" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:0 20px;font-weight:700;cursor:pointer;font-size:14px;">Search</button>
+          </div>
+        </div>
+        <div id="search-results">
+          <div class="empty-state" style="margin-top:0;">
+            <div class="empty-icon">🔍</div>
+            <div class="empty-title">Search your group history</div>
+            <div class="empty-sub">Type above and press Enter to search messages and transcripts.</div>
+          </div>
         </div>
       </div>
 
@@ -618,19 +629,34 @@
 
       <!-- TRANSCRIPTS -->
       <div class="panel-section" id="section-transcripts">
-        <div class="empty-state">
-          <div class="empty-icon">🎙</div>
-          <div class="empty-title">No transcripts yet</div>
-          <div class="empty-sub">Voice notes from your connected groups will be transcribed and appear here automatically.</div>
+        <div style="padding:16px 0 8px;display:flex;gap:10px;flex-wrap:wrap;">
+          <select id="transcript-group-filter" onchange="loadTranscripts()"
+            style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;">
+            <option value="">All groups</option>
+          </select>
+        </div>
+        <div id="transcripts-list">
+          <div class="empty-state"><div class="empty-icon">🎙</div><div class="empty-title">Loading…</div></div>
         </div>
       </div>
 
-      <!-- ACTIVITY -->
+      <!-- ACTIVITY (Messages feed) -->
       <div class="panel-section" id="section-activity">
-        <div class="empty-state">
-          <div class="empty-icon">⚡</div>
-          <div class="empty-title">No activity yet</div>
-          <div class="empty-sub">All Retena events — transcriptions, summaries, searches — are logged here.</div>
+        <div style="padding:16px 0 8px;display:flex;gap:10px;flex-wrap:wrap;">
+          <select id="msg-group-filter" onchange="loadMessages()"
+            style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;">
+            <option value="">All groups</option>
+          </select>
+          <select id="msg-type-filter" onchange="loadMessages()"
+            style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;">
+            <option value="all">All types</option>
+            <option value="text">Text</option>
+            <option value="voice">Voice</option>
+            <option value="image">Image</option>
+          </select>
+        </div>
+        <div id="messages-list">
+          <div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">Loading…</div></div>
         </div>
       </div>
 
@@ -707,6 +733,7 @@
     document.getElementById('loading').style.opacity = '0';
     setTimeout(() => { document.getElementById('loading').style.display = 'none'; }, 300);
     document.getElementById('app').style.display = 'flex';
+    loadAllData();
   }
   init();
 
@@ -765,6 +792,213 @@
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.replace('/dashboard/login');
+  }
+
+  // ── Helpers ──
+  function timeAgo(iso) {
+    const d = new Date(iso), now = new Date();
+    const s = Math.floor((now - d) / 1000);
+    if (s < 60) return `${s}s ago`;
+    if (s < 3600) return `${Math.floor(s/60)}m ago`;
+    if (s < 86400) return `${Math.floor(s/3600)}h ago`;
+    return d.toLocaleDateString();
+  }
+
+  function msgIcon(type) {
+    return type === 'voice' ? '🎙' : type === 'image' ? '🖼' : '💬';
+  }
+
+  let _groups = [];
+
+  // ── Load stats ──
+  async function loadStats() {
+    try {
+      const s = await fetch('/api/data/stats').then(r => r.json());
+      document.getElementById('stat-groups').textContent = s.totalGroups ?? '0';
+      document.getElementById('stat-messages').textContent = s.totalMessages ?? '0';
+      document.getElementById('stat-voice').textContent = s.totalVoice ?? '0';
+      document.getElementById('stat-transcripts').textContent = s.totalTranscripts ?? '0';
+      if (s.todayMessages != null) {
+        document.getElementById('stat-today-sub').textContent = `${s.todayMessages} today`;
+      }
+    } catch (e) { console.error('stats', e); }
+  }
+
+  // ── Load groups ──
+  async function loadGroups() {
+    try {
+      const groups = await fetch('/api/data/groups').then(r => r.json());
+      _groups = Array.isArray(groups) ? groups : [];
+
+      // Populate group filter selects
+      ['msg-group-filter','transcript-group-filter'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const cur = sel.value;
+        sel.innerHTML = '<option value="">All groups</option>';
+        _groups.forEach(g => {
+          const o = document.createElement('option');
+          o.value = g.id;
+          o.textContent = g.name || g.wa_group_id || g.id;
+          sel.appendChild(o);
+        });
+        if (cur) sel.value = cur;
+      });
+
+      const el = document.getElementById('groups-list');
+      if (!_groups.length) {
+        el.innerHTML = `<div class="empty-state"><div class="empty-icon">👥</div>
+          <div class="empty-title">No groups yet</div>
+          <div class="empty-sub">Add Retena's number to a WhatsApp group or scan the QR code to start capturing.</div></div>`;
+        return;
+      }
+
+      el.innerHTML = _groups.map(g => `
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;gap:14px;">
+          <div style="width:42px;height:42px;border-radius:50%;background:var(--accent-bg);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👥</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${g.name || g.wa_group_id || 'Unnamed group'}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px;">${g.participant_count ? g.participant_count + ' participants · ' : ''}${g.last_message_at ? timeAgo(g.last_message_at) : 'No messages yet'}</div>
+          </div>
+          <div style="font-size:11px;color:var(--text2);background:var(--bg2);padding:4px 10px;border-radius:20px;flex-shrink:0;">Active</div>
+        </div>`).join('');
+    } catch (e) {
+      document.getElementById('groups-list').innerHTML = `<div class="empty-state"><div class="empty-title">Error loading groups</div><div class="empty-sub">${e.message}</div></div>`;
+    }
+  }
+
+  // ── Load messages ──
+  async function loadMessages(forHome = false) {
+    const groupFilter = !forHome ? (document.getElementById('msg-group-filter')?.value || '') : '';
+    const typeFilter  = !forHome ? (document.getElementById('msg-type-filter')?.value || 'all') : 'all';
+    const targetEl = forHome ? document.getElementById('home-activity-list') : document.getElementById('messages-list');
+    if (!targetEl) return;
+
+    try {
+      let url = `/api/data/messages?limit=${forHome ? 20 : 100}`;
+      if (groupFilter) url += `&group=${groupFilter}`;
+      if (typeFilter && typeFilter !== 'all') url += `&type=${typeFilter}`;
+      const msgs = await fetch(url).then(r => r.json());
+
+      if (!Array.isArray(msgs) || !msgs.length) {
+        targetEl.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div>
+          <div class="empty-title">No messages yet</div>
+          <div class="empty-sub">Messages will appear here once your QR session captures activity.</div></div>`;
+        return;
+      }
+
+      const groupMap = {};
+      _groups.forEach(g => { groupMap[g.id] = g.name || g.wa_group_id || g.id; });
+
+      targetEl.innerHTML = msgs.map(m => {
+        const group = groupMap[m.group_id] || '';
+        return `
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;">
+          <div style="font-size:20px;margin-top:1px;">${msgIcon(m.message_type)}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="font-weight:600;font-size:13px;">${m.sender_name || m.sender_phone || 'Unknown'}</span>
+              ${group ? `<span style="font-size:11px;color:var(--text2);background:var(--bg2);padding:2px 8px;border-radius:20px;">${group}</span>` : ''}
+              <span style="font-size:11px;color:var(--text2);margin-left:auto;">${timeAgo(m.created_at)}</span>
+            </div>
+            <div style="font-size:13px;color:var(--text2);margin-top:4px;line-height:1.5;word-break:break-word;">
+              ${m.text_content ? m.text_content.substring(0, 300) + (m.text_content.length > 300 ? '…' : '') : `<em>[${m.message_type || 'media'}]</em>`}
+            </div>
+            ${m.message_type === 'voice' && m.duration_seconds ? `<div style="font-size:11px;color:var(--accent);margin-top:4px;">🎙 ${m.duration_seconds}s voice note</div>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    } catch (e) {
+      targetEl.innerHTML = `<div class="empty-state"><div class="empty-title">Error</div><div class="empty-sub">${e.message}</div></div>`;
+    }
+  }
+
+  // ── Load transcripts ──
+  async function loadTranscripts() {
+    const groupFilter = document.getElementById('transcript-group-filter')?.value || '';
+    const el = document.getElementById('transcripts-list');
+    if (!el) return;
+    try {
+      let url = '/api/data/transcripts?limit=50';
+      if (groupFilter) url += `&group=${groupFilter}`;
+      const rows = await fetch(url).then(r => r.json());
+
+      if (!Array.isArray(rows) || !rows.length) {
+        el.innerHTML = `<div class="empty-state"><div class="empty-icon">🎙</div>
+          <div class="empty-title">No transcripts yet</div>
+          <div class="empty-sub">Voice notes will be transcribed and appear here automatically.</div></div>`;
+        return;
+      }
+
+      const groupMap = {};
+      _groups.forEach(g => { groupMap[g.id] = g.name || g.wa_group_id || g.id; });
+
+      el.innerHTML = rows.map(t => {
+        const group = groupMap[t.group_id] || '';
+        return `
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+            <span style="font-size:16px;">🎙</span>
+            <span style="font-weight:600;font-size:13px;">${t.sender_name || t.sender_phone || 'Unknown'}</span>
+            ${group ? `<span style="font-size:11px;color:var(--text2);background:var(--bg2);padding:2px 8px;border-radius:20px;">${group}</span>` : ''}
+            ${t.duration_seconds ? `<span style="font-size:11px;color:var(--accent);">${t.duration_seconds}s</span>` : ''}
+            <span style="font-size:11px;color:var(--text2);margin-left:auto;">${timeAgo(t.created_at)}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text);line-height:1.6;word-break:break-word;">${t.transcription || '<em style="color:var(--text2)">No transcription available</em>'}</div>
+          ${t.summary ? `<div style="margin-top:8px;padding:8px 12px;background:var(--accent-bg);border-radius:8px;font-size:12px;color:var(--accent-h);line-height:1.5;">${t.summary}</div>` : ''}
+        </div>`;
+      }).join('');
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-title">Error</div><div class="empty-sub">${e.message}</div></div>`;
+    }
+  }
+
+  // ── Search ──
+  async function runSearch() {
+    const q = document.getElementById('search-input')?.value?.trim();
+    const el = document.getElementById('search-results');
+    if (!q || !el) return;
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Searching…</div></div>`;
+    try {
+      const { results } = await fetch('/api/data/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q }),
+      }).then(r => r.json());
+
+      if (!results?.length) {
+        el.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No results for "${q}"</div></div>`;
+        return;
+      }
+
+      const groupMap = {};
+      _groups.forEach(g => { groupMap[g.id] = g.name || g.wa_group_id || g.id; });
+
+      el.innerHTML = `<div style="font-size:12px;color:var(--text2);margin-bottom:12px;">${results.length} result${results.length !== 1 ? 's' : ''} for "${q}"</div>` +
+        results.map(r => {
+          const isTranscript = r._source === 'transcript';
+          const text = isTranscript ? (r.transcription || '') : (r.text_content || '');
+          const group = groupMap[r.group_id] || '';
+          return `
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+              <span>${isTranscript ? '🎙' : '💬'}</span>
+              <span style="font-weight:600;font-size:13px;">${r.sender_name || r.sender_phone || 'Unknown'}</span>
+              ${group ? `<span style="font-size:11px;color:var(--text2);background:var(--bg2);padding:2px 8px;border-radius:20px;">${group}</span>` : ''}
+              <span style="font-size:11px;color:var(--text2);margin-left:auto;">${timeAgo(r.created_at)}</span>
+            </div>
+            <div style="font-size:13px;color:var(--text);line-height:1.5;">${text.substring(0, 400)}${text.length > 400 ? '…' : ''}</div>
+          </div>`;
+        }).join('');
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-title">Search error</div><div class="empty-sub">${e.message}</div></div>`;
+    }
+  }
+
+  // ── Load all data after auth ──
+  async function loadAllData() {
+    await loadGroups();
+    await Promise.all([loadStats(), loadMessages(true), loadMessages(false), loadTranscripts()]);
   }
 </script>
 </body>
