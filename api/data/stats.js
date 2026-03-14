@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
         .catch(() => null),
       supabase('rewa_transcriptions?select=count', { headers: { 'Prefer': 'count=exact', 'Range': '0-0' } })
         .catch(() => null),
-      supabase(`rewa_messages?created_at=gte.${todayISO}&select=count`, { headers: { 'Prefer': 'count=exact', 'Range': '0-0' } })
+      supabase(`rewa_messages?timestamp=gte.${todayISO}&select=count`, { headers: { 'Prefer': 'count=exact', 'Range': '0-0' } })
         .catch(() => null),
     ]);
 
@@ -34,7 +34,7 @@ module.exports = async function handler(req, res) {
       countRows('rewa_messages', 'message_type=eq.voice&'),
       countRows('rewa_groups'),
       countRows('rewa_transcriptions'),
-      countRows('rewa_messages', `created_at=gte.${todayISO}&`),
+      countRows('rewa_messages', `timestamp=gte.${todayISO}&`),
     ]);
 
     res.json({

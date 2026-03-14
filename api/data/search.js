@@ -10,8 +10,8 @@ module.exports = async function handler(req, res) {
     const q = query.trim();
     // Keyword search across messages and transcriptions
     const [msgResults, transcriptResults] = await Promise.all([
-      supabase(`rewa_messages?text_content=ilike.*${encodeURIComponent(q)}*&order=created_at.desc&limit=20&select=*`),
-      supabase(`rewa_transcriptions?transcription=ilike.*${encodeURIComponent(q)}*&order=created_at.desc&limit=20&select=*`),
+      supabase(`rewa_messages?or=(body.ilike.*${encodeURIComponent(q)}*,text_content.ilike.*${encodeURIComponent(q)}*)&order=timestamp.desc&limit=20&select=*`),
+      supabase(`rewa_transcriptions?transcription=ilike.*${encodeURIComponent(q)}*&order=created_at.desc&limit=20&select=*`).catch(() => []),
     ]);
 
     const results = [
