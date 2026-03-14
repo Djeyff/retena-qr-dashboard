@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "/api/auth/magic-link", "dest": "/api/auth/magic-link.js" },
+    { "src": "/api/auth/me",         "dest": "/api/auth/me.js" },
+    { "src": "/api/auth/logout",     "dest": "/api/auth/logout.js" },
+    { "src": "/dashboard/login[/]?", "dest": "/dashboard/login.html" },
+    { "src": "/dashboard[/]?$",      "dest": "/dashboard/index.html" },
+    { "src": "/dashboard/(.*)",      "dest": "/dashboard/$1" },
+    { "src": "/favicon.svg",         "dest": "/favicon.svg" },
+    { "src": "/og.svg",              "dest": "/og.svg" },
+    { "src": "/(.*)",                "dest": "/index.html" }
+  ]
+}

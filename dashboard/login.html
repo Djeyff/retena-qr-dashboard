@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Log in — Retena</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #050c18;
+      color: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+    .card {
+      width: 100%;
+      max-width: 360px;
+    }
+    .logo-wrap {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .logo-icon {
+      width: 56px; height: 56px;
+      background: #f39c3a;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 22px;
+      color: #000;
+      margin-bottom: 16px;
+    }
+    .logo-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .logo-sub { font-size: 14px; color: #7a8c9e; }
+
+    .box {
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 20px;
+      padding: 24px;
+    }
+    .label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #7a8c9e;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 8px;
+    }
+    input[type=email] {
+      width: 100%;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #f0f2f5;
+      outline: none;
+      transition: border-color .2s;
+      font-family: inherit;
+      margin-bottom: 12px;
+    }
+    input[type=email]:focus { border-color: rgba(243,156,58,.5); }
+    input[type=email]::placeholder { color: #4a5568; }
+    .btn-primary {
+      width: 100%;
+      background: #f39c3a;
+      color: #000;
+      font-weight: 700;
+      font-size: 14px;
+      border: none;
+      border-radius: 12px;
+      padding: 13px;
+      cursor: pointer;
+      transition: background .2s, opacity .2s;
+      font-family: inherit;
+    }
+    .btn-primary:hover { background: #f5b86e; }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+    .success { text-align: center; padding: 16px 0; }
+    .success .icon { font-size: 40px; margin-bottom: 12px; }
+    .success h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .success p { font-size: 13px; color: #7a8c9e; line-height: 1.5; }
+
+    .error-msg {
+      background: rgba(239,68,68,.1);
+      border: 1px solid rgba(239,68,68,.2);
+      color: #f87171;
+      font-size: 13px;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #3a4a5e;
+      line-height: 1.8;
+    }
+    .footer a { color: #f39c3a; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    .divider {
+      text-align: center;
+      font-size: 12px;
+      color: #3a4a5e;
+      margin: 12px 0;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo-wrap">
+      <div class="logo-icon">R</div>
+      <h1 class="logo-title">Log in to Retena</h1>
+      <p class="logo-sub">Enter your email — we'll send you a magic link</p>
+    </div>
+
+    <div class="box">
+      <div id="step-email">
+        <div id="err" class="error-msg"></div>
+        <label class="label" for="email">Work email</label>
+        <input type="email" id="email" placeholder="you@company.com" autocomplete="email" autofocus>
+        <button class="btn-primary" id="send-btn" onclick="sendMagicLink()">
+          Send magic link →
+        </button>
+      </div>
+
+      <div id="step-success" class="success hidden">
+        <div class="icon">✉️</div>
+        <h3>Check your email</h3>
+        <p>Click the magic link to log in to Retena.<br>Redirecting you now in dev mode…</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      Don't have an account?<br>
+      <a href="https://wa.me/18292044903?text=Hola%20Retena" target="_blank">Start free on WhatsApp</a>
+      &nbsp;·&nbsp;
+      <a href="https://t.me/VozClaraBot" target="_blank">Telegram</a>
+      <br><br>
+      <a href="/" style="color:#3a4a5e;">← retena.app</a>
+    </div>
+  </div>
+
+  <script>
+    // If already authenticated, go to dashboard
+    fetch('/api/auth/me').then(r => {
+      if (r.ok) window.location.replace('/dashboard/');
+    });
+
+    async function sendMagicLink() {
+      const email = document.getElementById('email').value.trim();
+      const btn = document.getElementById('send-btn');
+      const err = document.getElementById('err');
+
+      err.style.display = 'none';
+      if (!email) { showErr('Please enter your email.'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+
+      try {
+        const res = await fetch('/api/auth/magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+
+        if (!res.ok) { showErr(data.error || 'Something went wrong.'); btn.disabled = false; btn.textContent = 'Send magic link →'; return; }
+
+        // Dev mode: immediate redirect
+        if (data.redirect) {
+          document.getElementById('step-email').classList.add('hidden');
+          document.getElementById('step-success').classList.remove('hidden');
+          setTimeout(() => window.location.replace(data.redirect), 800);
+          return;
+        }
+
+        // Prod: show success state
+        document.getElementById('step-email').classList.add('hidden');
+        document.getElementById('step-success').classList.remove('hidden');
+        document.querySelector('#step-success p').textContent = 'Click the magic link in your email to log in.';
+      } catch (e) {
+        showErr('Network error. Please try again.');
+        btn.disabled = false; btn.textContent = 'Send magic link →';
+      }
+    }
+
+    function showErr(msg) {
+      const el = document.getElementById('err');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    document.getElementById('email').addEventListener('keydown', e => {
+      if (e.key === 'Enter') sendMagicLink();
+    });
+  </script>
+</body>
+</html>

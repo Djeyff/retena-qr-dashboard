@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Retena Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset & tokens ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #070d1a;
+      --bg2:      #0c1426;
+      --bg3:      #111d30;
+      --border:   rgba(255,255,255,.07);
+      --text:     #eef1f5;
+      --text2:    #7a8ea8;
+      --accent:   #f39c3a;
+      --accent-h: #f5b86e;
+      --accent-bg:rgba(243,156,58,.08);
+      --sidebar-w: 220px;
+      --sidebar-w-collapsed: 64px;
+      --nav-h-mobile: 56px;
+    }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── Loading overlay ── */
+    #loading {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+      transition: opacity .3s;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid rgba(243,156,58,.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── App layout ── */
+    #app { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      height: 100%;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: width .2s, min-width .2s;
+      overflow: hidden;
+    }
+    #sidebar.collapsed {
+      width: var(--sidebar-w-collapsed);
+      min-width: var(--sidebar-w-collapsed);
+    }
+    #sidebar.collapsed .label-text,
+    #sidebar.collapsed .workspace-name,
+    #sidebar.collapsed .logo-name,
+    #sidebar.collapsed .usage-section,
+    #sidebar.collapsed .crosslink-text,
+    #sidebar.collapsed .nav-label { display: none; }
+    #sidebar.collapsed .nav-item { justify-content: center; padding: 10px; }
+    #sidebar.collapsed .sidebar-logo { justify-content: center; padding: 16px 0; }
+    #sidebar.collapsed .collapse-btn { transform: rotate(180deg); }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      min-height: 56px;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 14px; color: #000;
+      flex-shrink: 0;
+    }
+    .logo-name { font-weight: 800; font-size: 15px; }
+
+    .collapse-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--text2);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      display: flex;
+      transition: color .2s, transform .2s;
+      flex-shrink: 0;
+    }
+    .collapse-btn:hover { color: var(--text); }
+
+    .workspace-section {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .workspace-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+    .workspace-name { font-size: 13px; font-weight: 600; }
+
+    /* ── Nav ── */
+    .sidebar-nav {
+      flex: 1;
+      padding: 8px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .nav-section-label {
+      font-size: 10px;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      padding: 12px 8px 4px;
+      white-space: nowrap;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 10px;
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      white-space: nowrap;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-item:hover { background: rgba(255,255,255,.05); color: var(--text); }
+    .nav-item.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+    .nav-icon { flex-shrink: 0; width: 18px; height: 18px; }
+
+    /* ── Usage ── */
+    .usage-section {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .usage-title { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+    .usage-item { margin-bottom: 10px; }
+    .usage-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
+    .usage-key { color: var(--text2); }
+    .usage-val { color: var(--text); font-weight: 600; }
+    .usage-bar { height: 4px; background: rgba(255,255,255,.08); border-radius: 2px; overflow: hidden; }
+    .usage-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width .3s; }
+    .usage-fill.amber { background: #f5a623; }
+    .usage-fill.red { background: #ef4444; }
+
+    /* ── Cross-product link ── */
+    .crosslink {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      text-decoration: none;
+      color: var(--text2);
+      font-size: 12px;
+      font-weight: 500;
+      transition: color .15s;
+    }
+    .crosslink:hover { color: var(--text); }
+    .crosslink-icon {
+      width: 24px; height: 24px;
+      background: rgba(99,102,241,.15);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 12px;
+    }
+
+    /* ── Main content ── */
+    #main {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px;
+      height: 56px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .topbar-title { font-size: 16px; font-weight: 700; }
+    .topbar-spacer { flex: 1; }
+    .topbar-user {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--text2);
+      cursor: pointer;
+    }
+    .avatar {
+      width: 28px; height: 28px;
+      background: var(--accent-bg);
+      border: 1px solid rgba(243,156,58,.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--accent);
+    }
+
+    /* ── Content area ── */
+    .content { flex: 1; padding: 24px; }
+
+    /* ── Stats grid ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 20px;
+    }
+    .stat-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .stat-val { font-size: 28px; font-weight: 800; }
+    .stat-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+    /* ── Section header ── */
+    .section-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+      text-align: center;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+    .empty-icon { font-size: 40px; margin-bottom: 16px; }
+    .empty-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .empty-sub { font-size: 13px; color: var(--text2); max-width: 300px; line-height: 1.6; }
+    .btn-empty {
+      margin-top: 20px;
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      font-size: 13px;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-empty:hover { background: var(--accent-h); }
+
+    /* ── Groups panel (placeholder) ── */
+    .panel-section { display: none; }
+    .panel-section.active { display: block; }
+
+    /* ── Mobile bottom nav ── */
+    #mobile-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--nav-h-mobile);
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      z-index: 100;
+    }
+    .mobile-nav-inner {
+      display: flex;
+      height: 100%;
+    }
+    .mobile-tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      color: var(--text2);
+      font-size: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      transition: color .15s;
+    }
+    .mobile-tab.active { color: var(--accent); }
+    .mobile-tab svg { width: 20px; height: 20px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      #sidebar { display: none; }
+      #mobile-nav { display: flex; }
+      #main { padding-bottom: var(--nav-h-mobile); }
+      .content { padding: 16px; }
+      .topbar { padding: 0 16px; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading"><div class="spinner"></div></div>
+
+<!-- App shell -->
+<div id="app" style="display:none">
+
+  <!-- ── SIDEBAR (shared component structure) ── -->
+  <aside id="sidebar">
+
+    <!-- Logo + collapse -->
+    <div class="sidebar-logo">
+      <div class="logo-icon">R</div>
+      <span class="logo-name">Retena</span>
+      <button class="collapse-btn" id="collapse-btn" title="Collapse sidebar" onclick="toggleSidebar()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7M18 19l-7-7 7-7"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Workspace -->
+    <div class="workspace-section">
+      <div class="workspace-label">Workspace</div>
+      <div class="workspace-name">My Workspace</div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-section="home" onclick="navigate('home', this)">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        <span class="label-text">Home</span>
+      </button>
+      <button class="nav-item" data-section="groups" onclick="navigate('groups', this)">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span class="label-text">Groups</span>
+      </button>
+      <button class="nav-item" data-section="search" onclick="navigate('search', this)">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <span class="label-text">AI Search</span>
+      </button>
+      <button class="nav-item" data-section="summaries" onclick="navigate('summaries', this)">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <span class="label-text">Summaries</span>
+      </button>
+      <button class="nav-item" data-section="transcripts" onclick="navigate('transcripts', this)">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+        </svg>
+        <span class="label-text">Transcripts</span>
+      </button>
+      <button class="nav-item" data-section="activity" onclick="navigate('activity', this)">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        <span class="label-text">Activity</span>
+      </button>
+      <button class="nav-item" data-section="exports" onclick="navigate('exports', this)">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        <span class="label-text">Exports</span>
+      </button>
+      <button class="nav-item" data-section="settings" onclick="navigate('settings', this)">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span class="label-text">Settings</span>
+      </button>
+    </nav>
+
+    <!-- Usage meters -->
+    <div class="usage-section">
+      <div class="usage-title">Usage</div>
+      <div class="usage-item">
+        <div class="usage-row">
+          <span class="usage-key">🎙 Voice min</span>
+          <span class="usage-val">0 / 100</span>
+        </div>
+        <div class="usage-bar"><div class="usage-fill" style="width:0%"></div></div>
+      </div>
+      <div class="usage-item">
+        <div class="usage-row">
+          <span class="usage-key">🤖 AI queries</span>
+          <span class="usage-val">0 / 50</span>
+        </div>
+        <div class="usage-bar"><div class="usage-fill" style="width:0%"></div></div>
+      </div>
+      <div class="usage-item" style="margin-bottom:0">
+        <div class="usage-row">
+          <span class="usage-key">👥 Groups</span>
+          <span class="usage-val">0 / 5</span>
+        </div>
+        <div class="usage-bar"><div class="usage-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- Cross-product link -->
+    <a class="crosslink" href="https://voz-clara.com" target="_blank">
+      <div class="crosslink-icon">🎤</div>
+      <span class="crosslink-text">Personal use → VozClara</span>
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-left:auto;flex-shrink:0">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+      </svg>
+    </a>
+
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <main id="main">
+    <div class="topbar">
+      <span class="topbar-title" id="page-title">Home</span>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-user" onclick="logout()">
+        <div class="avatar" id="avatar">?</div>
+        <span id="user-email" style="font-size:12px"></span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- HOME -->
+      <div class="panel-section active" id="section-home">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Groups connected</div>
+            <div class="stat-val">0</div>
+            <div class="stat-sub">Add your first group to start</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Voice notes captured</div>
+            <div class="stat-val">0</div>
+            <div class="stat-sub">This month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">AI searches</div>
+            <div class="stat-val">0</div>
+            <div class="stat-sub">This month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Summaries sent</div>
+            <div class="stat-val">0</div>
+            <div class="stat-sub">This week</div>
+          </div>
+        </div>
+
+        <div class="section-hdr">
+          <span class="section-title">Recent activity</span>
+        </div>
+        <div class="empty-state">
+          <div class="empty-icon">🔊</div>
+          <div class="empty-title">No activity yet</div>
+          <div class="empty-sub">Add Retena's number to a WhatsApp group to start capturing voice notes and messages.</div>
+          <button class="btn-empty" onclick="navigate('groups', document.querySelector('[data-section=groups]'))">Connect your first group →</button>
+        </div>
+      </div>
+
+      <!-- GROUPS -->
+      <div class="panel-section" id="section-groups">
+        <div class="empty-state">
+          <div class="empty-icon">👥</div>
+          <div class="empty-title">No groups connected</div>
+          <div class="empty-sub">Add Retena's WhatsApp number to any group, or scan a QR code to connect it.</div>
+          <button class="btn-empty">Connect a group →</button>
+        </div>
+      </div>
+
+      <!-- AI SEARCH -->
+      <div class="panel-section" id="section-search">
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <div class="empty-title">AI Search</div>
+          <div class="empty-sub">Search across your entire group history with natural language. Connect a group first to get started.</div>
+        </div>
+      </div>
+
+      <!-- SUMMARIES -->
+      <div class="panel-section" id="section-summaries">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <div class="empty-title">No summaries yet</div>
+          <div class="empty-sub">Daily and weekly summaries appear here once your groups are active.</div>
+        </div>
+      </div>
+
+      <!-- TRANSCRIPTS -->
+      <div class="panel-section" id="section-transcripts">
+        <div class="empty-state">
+          <div class="empty-icon">🎙</div>
+          <div class="empty-title">No transcripts yet</div>
+          <div class="empty-sub">Voice notes from your connected groups will be transcribed and appear here automatically.</div>
+        </div>
+      </div>
+
+      <!-- ACTIVITY -->
+      <div class="panel-section" id="section-activity">
+        <div class="empty-state">
+          <div class="empty-icon">⚡</div>
+          <div class="empty-title">No activity yet</div>
+          <div class="empty-sub">All Retena events — transcriptions, summaries, searches — are logged here.</div>
+        </div>
+      </div>
+
+      <!-- EXPORTS -->
+      <div class="panel-section" id="section-exports">
+        <div class="empty-state">
+          <div class="empty-icon">📤</div>
+          <div class="empty-title">No exports yet</div>
+          <div class="empty-sub">Export your group transcripts and summaries as PDF or CSV.</div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="panel-section" id="section-settings">
+        <div class="empty-state">
+          <div class="empty-icon">⚙️</div>
+          <div class="empty-title">Settings</div>
+          <div class="empty-sub">Workspace, team, billing, and integrations — coming soon.</div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+
+</div><!-- /app -->
+
+<!-- Mobile bottom nav -->
+<nav id="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mobile-tab active" onclick="navigate('home', null, this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      Home
+    </button>
+    <button class="mobile-tab" onclick="navigate('groups', null, this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      Groups
+    </button>
+    <button class="mobile-tab" onclick="navigate('search', null, this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      Search
+    </button>
+    <button class="mobile-tab" onclick="navigate('settings', null, this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      Settings
+    </button>
+  </div>
+</nav>
+
+<script>
+  // ── Auth guard ──
+  async function init() {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (!res.ok) { window.location.replace('/dashboard/login'); return; }
+      const user = await res.json();
+      const initials = (user.email || '?').charAt(0).toUpperCase();
+      document.getElementById('avatar').textContent = initials;
+      document.getElementById('user-email').textContent = user.email;
+    } catch (e) {
+      window.location.replace('/dashboard/login');
+      return;
+    }
+    document.getElementById('loading').style.opacity = '0';
+    setTimeout(() => { document.getElementById('loading').style.display = 'none'; }, 300);
+    document.getElementById('app').style.display = 'flex';
+  }
+  init();
+
+  // ── Sidebar collapse ──
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+  }
+
+  // ── Navigation ──
+  const TITLES = {
+    home: 'Home', groups: 'Groups', search: 'AI Search',
+    summaries: 'Summaries', transcripts: 'Transcripts',
+    activity: 'Activity', exports: 'Exports', settings: 'Settings'
+  };
+
+  function navigate(section, btn, mobileTab) {
+    // Update sections
+    document.querySelectorAll('.panel-section').forEach(p => p.classList.remove('active'));
+    document.getElementById('section-' + section).classList.add('active');
+
+    // Update sidebar nav
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    // Update mobile nav
+    document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
+    if (mobileTab) mobileTab.classList.add('active');
+
+    // Update title
+    document.getElementById('page-title').textContent = TITLES[section] || section;
+  }
+
+  // ── Logout ──
+  async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.replace('/dashboard/login');
+  }
+</script>
+</body>
+</html>
