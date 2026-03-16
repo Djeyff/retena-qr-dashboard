@@ -136,7 +136,14 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadPersonal() {
   showLoading(document.getElementById('conv-list'));
   try {
-    const data = await api('/api/rt/personal');
+    // Try the new endpoint first (returns chat_id, from_me, conversations)
+    let data;
+    try {
+      data = await api('/api/data/personal');
+    } catch (e1) {
+      // Fallback to old endpoint
+      data = await api('/api/rt/personal');
+    }
     allMessages = data.items || [];
     conversations = data.conversations || buildConversations(allMessages);
     renderConversationList();
